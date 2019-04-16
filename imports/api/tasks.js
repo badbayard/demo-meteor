@@ -1,4 +1,5 @@
 import { Meteor } from 'meteor/meteor';
+import { Tracker } from 'meteor/tracker';
 import { Mongo } from 'meteor/mongo';
 import { check } from 'meteor/check';
 
@@ -7,14 +8,17 @@ export const Tasks = new Mongo.Collection('tasks');
 if (Meteor.isServer) {
   // This code only runs on the server
   // Only publish tasks that are public or belong to the current user
-  Meteor.publish('tasks', function tasksPublication() {
-    return Tasks.find({
-      $or: [
-        { private: { $ne: true } },
-        { owner: this.userId },
-      ],
+  Tracker.autorun(() => {
+    Meteor.publish('tasks', function tasksPublication() {
+      console.log("we have a publish - tasks")
+      return Tasks.find({
+        $or: [
+          { private: { $ne: true } },
+          { owner: this.userId },
+        ],
+      });
     });
-  });
+  })
 }
 
 Meteor.methods({
@@ -26,12 +30,17 @@ Meteor.methods({
       throw new Meteor.Error('not-authorized');
     }
 
+    let username = Meteor.users.findOne(this.userId).username
+
     Tasks.insert({
       text,
       createdAt: new Date(),
       owner: this.userId,
-      username: Meteor.users.findOne(this.userId).username,
+      username: username,
     });
+    if (Meteor.isServer) {
+      console.log(`user '${username}' say '${text}'`);
+    }
   },
   'tasks.remove'(taskId) {
     check(taskId, String);

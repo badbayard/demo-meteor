@@ -9,7 +9,15 @@ import './body.html';
 
 Template.body.onCreated(function bodyOnCreated() {
   this.state = new ReactiveDict();
-  Meteor.subscribe('tasks');
+
+  var itemSub = Meteor.subscribe('tasks');
+    Tracker.autorun(() => {
+      // fetch data from collection when .ready() returns true
+      if (itemSub.ready()){
+       var data = Tasks.find().fetch();
+       console.log("subscribe")
+      }
+    });
 });
 
 Template.body.helpers({
